@@ -58,7 +58,12 @@ func init() {
 	configUsage := fmt.Sprintf("config file (default is $HOME/%s, ./%s.yaml)", cfgFileName, cfgFileName)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", configUsage)
 
-	rootCmd.PersistentFlags().StringVar(&GlobalConfigCfg.MastPath, "mastpath", "~/.mast",
+	home, err := homedir.Dir()
+	if err != nil {
+		log.Term.Error(err)
+		os.Exit(1)
+	}
+	rootCmd.PersistentFlags().StringVar(&GlobalConfigCfg.MastPath, "mastpath", home + "/.mast",
 		"path to mast data storage")
 
 	// root command
@@ -159,8 +164,7 @@ func initConfig() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	var err error
-	GlobalConfig, err = mastparse.NewConfigClass(viper.GetViper(),
-		mastparse.ConfigClassCfg{ Log: log.Term } )
+	GlobalConfig, err = mastparse.NewConfigClass(viper.GetViper(), GlobalConfigCfg)
 	if err != nil {
 		log.Term.Error(err)
 		os.Exit(1)

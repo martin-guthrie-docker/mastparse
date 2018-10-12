@@ -40,7 +40,7 @@ func setupTerm() {
 
 	// Default starting log level
 	Term.Level = logrus.WarnLevel
-	//Term.Level = logrus.DebugLevel
+	Term.Level = logrus.DebugLevel
 }
 
 func init() {
