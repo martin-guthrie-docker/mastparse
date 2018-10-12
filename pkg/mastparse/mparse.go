@@ -173,11 +173,26 @@ func (t *MparseClass) ReadMastInventory() error {
 		t.Log.Errorf("Fail get_hosts: %v", err)
 		return err
 	}
-	err = t.make_ssh_for_hosts()
+
+	return nil
+}
+
+func (t *MparseClass) PrintCLIs() error {
+
+	err := t.make_ssh_for_hosts()
 	if err != nil {
 		t.Log.Errorf("Fail make_ssh_cmds: %v", err)
 		return err
 	}
+
+	fmt.Println("Docker UCP CLI interface:")
+	cmd := fmt.Sprintf("AUTHTOKEN=$(curl -sk -d '{\"username\":\"%s\",\"password\":\"%s\"}' https://%s/auth/login | jq -r .auth_token)",
+		"admin", "ucp12345", t.docker_ucp_lb)
+	fmt.Println(cmd)
+
+	cmd = fmt.Sprintf("curl -k -H \"Authorization: Bearer $AUTHTOKEN\" https://%s/api/clientbundle -o bundle.zip",
+		t.docker_ucp_lb)
+	fmt.Println(cmd)
 
 	return nil
 }

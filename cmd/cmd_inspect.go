@@ -43,6 +43,7 @@ func inspectFunc(args []string) error {
 	}
 
 	mp.ReadMastInventory()
+	mp.PrintCLIs()
 
 	mp.Close()
 	log.Term.Debug("Done")
