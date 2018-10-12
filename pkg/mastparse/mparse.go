@@ -13,7 +13,7 @@ import (
 
 
 const mastInventoryFile string = "/inventory/1.hosts"
-const ansibleVarsRegex string = `ansible_user=(?P<user>\w*)\s*ansible_host=(?P<ip>\d+\.\d+\.\d+\.\d+)`
+const ansibleVarsRegex string = `^(?P<id>.*)\s*ansible_user=(?P<user>\w*)\s*ansible_host=(?P<ip>\d+\.\d+\.\d+\.\d+)`
 
 // initializer struct for ExAClass
 type MparseClassCfg struct {
@@ -24,6 +24,7 @@ type MparseClassCfg struct {
 
 type creds struct {
 	field   string
+	id      string
 	user    string
 	ip      string
 }
@@ -84,18 +85,20 @@ func (t *MparseClass) get_creds_fields(dst *[]creds, body string, field string) 
 			t.Log.Debugf("No matches for line: %s", line)
 			continue
 		}
-		if len(matches) != 3 {
+		if len(matches) != 4 {
 			t.Log.Errorf("Unexpected matches")
 			continue
 		}
 		t.Log.Debug("len(matches): ", len(matches))
 		t.Log.Debug("matches[0]: ", matches[0])
-		t.Log.Info("user: ", matches[1])
-		t.Log.Info("ip  : ", matches[2])
+		t.Log.Info("id  : ", matches[1])
+		t.Log.Info("user: ", matches[2])
+		t.Log.Info("ip  : ", matches[3])
 		var c creds
 		c.field = field
-		c.user = matches[1]
-		c.ip = matches[2]
+		c.id = matches[1]
+		c.user = matches[2]
+		c.ip = matches[3]
 		*dst = append(*dst, c)
 	}
 	return nil
@@ -139,15 +142,13 @@ func (t *MparseClass) get_hosts() error {
 	return nil
 }
 
-
 func (t *MparseClass) make_ssh_for_hosts() error {
 	for _, cred := range t.sshHosts {
-		fmt.Printf("%25s : ssh -i ~./mast/id_rsa %s@%s\n", cred.field, cred.user, cred.ip)
+		fmt.Printf("%25s : %20s : ssh -i ~./mast/id_rsa %s@%s\n", cred.field, cred.id, cred.user, cred.ip)
 	}
 
 	return nil
 }
-
 
 func (t *MparseClass) ReadMastInventory() error {
 	t.Log.Info("Start: path ", t.pathToMastInventory)
