@@ -35,7 +35,7 @@ func inspectFunc(args []string) error {
 		return err
 	}
 
-	err = mp.Open()
+	err = mp.Open(nil)
 	if err != nil {
 		log.Term.Error("open failed")
 		log.Term.Error("Please check your deployment name and/or path to mast datastore")

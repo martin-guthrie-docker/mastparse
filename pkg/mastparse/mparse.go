@@ -66,10 +66,6 @@ func NewMparseClass(cfg MparseClassCfg) (*MparseClass, error) {
 	t.openSucceeded = false
 	t.ansibleRegex, _ = regexp.Compile(ansibleVarsRegex)
 
-	t.iniField = []string{"linux-ucp-manager-primary", "linux-dtr-worker-primary", "linux-ucp-manager-replicas",
-	"linux-dtr-worker-replicas", "linux-workers", "windows-workers", "linux-databases", "linux-build-servers",
-	"windows-databases", "windows-build-servers"}
-
 	return t, nil
 }
 
@@ -187,7 +183,7 @@ func (t *MparseClass) ReadMastInventory() error {
 }
 
 
-func (t *MparseClass) Open() error {
+func (t *MparseClass) Open(fields []string) error {
 	t.Log.Info("Start: name ", t.Name, ", path ", t.MastPath)
 
 	// check is mast path exist
@@ -213,6 +209,20 @@ func (t *MparseClass) Open() error {
 	}
 
 	t.Log.Info(t.pathToMastInventory + " is present")
+
+	if fields == nil {
+		t.Log.Info("using default fields")
+		t.iniField = []string{"linux-ucp-manager-primary", "linux-dtr-worker-primary", "linux-ucp-manager-replicas",
+			"linux-dtr-worker-replicas", "linux-workers", "windows-workers", "linux-databases", "linux-build-servers",
+			"windows-databases", "windows-build-servers"}
+	} else {
+		t.Log.Info("using user supplied fields")
+		t.iniField = fields
+	}
+	for _, field := range t.iniField {
+		t.Log.Debug(field)
+	}
+
 	t.openSucceeded = true
 
 	return nil
@@ -224,5 +234,9 @@ func (t *MparseClass) OpenSucceeded() bool {
 
 func (t *MparseClass) Close() {
 	t.Log.Info("Start")
+	t.openSucceeded = false
+	// free up memory
+	t.sshHosts = nil
+	t.iniField = nil
 }
 
