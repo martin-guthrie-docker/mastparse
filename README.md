@@ -18,7 +18,7 @@ linux-ucp-manager-primary : i-0dc78492b42702fa5  : ssh -i ~./mast/id_rsa docker@
 Docker UCP CLI interface: (run these cmds from ssh terminal on UCP manager
 -------------------------
 sudo apt install unzip jq
-AUTHTOKEN=$(curl -sk -d '{"username":"admin","password":"ucp12345"}' https://mgag-ucp-f7295da70e433929.elb.us-west-2.amazonaws.com/auth/login | jq -r .auth_token)
+AUTHTOKEN=$(curl -sk -d '{"username":"admin","password":"abcdefgh"}' https://mgag-ucp-f7295da70e433929.elb.us-west-2.amazonaws.com/auth/login | jq -r .auth_token)
 curl -k -H "Authorization: Bearer $AUTHTOKEN" https://mgag-ucp-f7295da70e433929.elb.us-west-2.amazonaws.com/api/clientbundle -o bundle.zip
 unzip bundle.zip
 eval "$(<env.sh)"
