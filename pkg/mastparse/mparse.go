@@ -6,10 +6,13 @@ import (
 	"gopkg.in/ini.v1"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"strings"
 )
 
 
 const mastInventoryFile string = "/inventory/1.hosts"
+const ansibleVarsRegex string = `ansible_user=(?P<user>\w*)\s*ansible_host=(?P<ip>\d+\.\d+\.\d+\.\d+)`
 
 // initializer struct for ExAClass
 type MparseClassCfg struct {
@@ -17,6 +20,13 @@ type MparseClassCfg struct {
 	Name 	 		     string  // name of deployment
 	MastPath             string  // path of mast information, typically ~/.mast
 }
+
+type creds struct {
+	name    string
+	user    string
+	ip      string
+}
+
 
 type MparseClass struct {
 	MparseClassCfg          // this is an embedded type
@@ -26,9 +36,11 @@ type MparseClass struct {
 	pathToMastInventory  string
 
 	// things needed to build out the commands
+	ansibleRegex         *regexp.Regexp
 	docker_ucp_lb        string
-	ucp_manager_ip       string
-	ucp_manager_user     string
+	sshHosts             []creds
+	hosts                []string
+
 }
 
 // constructor for ExAClass
@@ -50,9 +62,68 @@ func NewMparseClass(cfg MparseClassCfg) (*MparseClass, error) {
 
 	// set internal states
 	t.openSucceeded = false
+	t.ansibleRegex, _ = regexp.Compile(ansibleVarsRegex)
+
+	t.hosts = []string{"linux-ucp-manager-primary", "linux-dtr-worker-primary"}
 
 	return t, nil
 }
+
+func (t *MparseClass) get_creds_fields(dst *[]creds, body string) error {
+	for _, line := range strings.Split(strings.TrimSuffix(body, "\n"), "\n") {
+		t.Log.Debug("parse: ", line)
+		matches := t.ansibleRegex.FindStringSubmatch(line)
+		if len(matches) != 3 {
+			t.Log.Errorf("Unexpected matches")
+			return errors.New("Unexpected matches")
+		}
+		t.Log.Debug("len(matches): ", len(matches))
+		t.Log.Debug("matches[0]: ", matches[0])
+		t.Log.Info("ucp_manager_user: ", matches[1])
+		t.Log.Info("ucp_manager_ip: ", matches[2])
+		var c creds
+		c.user = matches[1]
+		c.ip = matches[2]
+		*dst = append(*dst, c)
+	}
+	return nil
+}
+
+func (t *MparseClass) get_body(field string) (string, error) {
+	cfg, err := ini.LoadSources(ini.LoadOptions{
+		UnparseableSections: []string{field},
+	}, t.pathToMastInventory)
+	if err != nil {
+		t.Log.Errorf("Fail to ini.LoadSources: ", err)
+		return "", err
+	}
+
+	body := cfg.Section(field).Body()
+	return body, nil
+}
+
+func (t *MparseClass) get_hosts() error {
+	// the ansible ini field looks like this,
+	//
+	// [linux-ucp-manager-primary]
+	// i-0dc78492b42702fa5 ansible_user=docker ansible_host=54.202.38.187
+	//
+	// which is not parsable via the ini library, so bring in as a blob
+	// and use regex to get the parts
+
+	for _, host := range t.hosts {
+		body, err := t.get_body(host)
+		if err != nil {
+			t.Log.Errorf("Fail to ini.get_body for host: %s, %v", host, err)
+			return err
+		}
+		t.get_creds_fields(&t.sshHosts, body)
+	}
+	t.Log.Debug("len(t.sshHosts): ", len(t.sshHosts))
+
+	return nil
+}
+
 
 func (t *MparseClass) ReadMastInventory() error {
 	t.Log.Info("Start: path ", t.pathToMastInventory)
@@ -69,17 +140,13 @@ func (t *MparseClass) ReadMastInventory() error {
 	}
 
 	t.docker_ucp_lb = cfg.Section("all:vars").Key("docker_ucp_lb").String()
-	t.Log.Info("docker_ucp_lb:", t.docker_ucp_lb)
+	t.Log.Info("docker_ucp_lb: ", t.docker_ucp_lb)
 
-	keys := cfg.Section("linux-ucp-manager-primary").KeyStrings()
-	t.Log.Debug(keys[0])
-
-	value := cfg.Section("linux-ucp-manager-primary").Key(keys[0]).Value()
-	t.Log.Debug(value)
-	t.Log.Info("test")
-
-	ansible_info := cfg.Section("linux-ucp-manager-primary").Key(keys[0]).String()
-	t.Log.Info("ucp_manager_ip:", ansible_info)
+	err = t.get_hosts()
+	if err != nil {
+		t.Log.Errorf("Fail get_ucp_manager_prime_fields: %v", err)
+		return err
+	}
 
 	return nil
 }
