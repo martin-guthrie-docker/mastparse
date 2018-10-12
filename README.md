@@ -7,16 +7,21 @@ a terminal.
 ## Typical usage
 
 ```bash
-martin@martin-Latitude-5590:~/go/src/github.com/martin-guthrie-docker/mastparse$ ./mastparse inspect mgag1
+martin@martin-Latitude-5590:~/go/src/github.com/martin-guthrie-docker/mastparse$ ./mastparse inspect mgag
 [0000]  WARN       command.go: 852:cobra.(*Command).ExecuteC     | Config File ".mastp" Not Found in "[/home/martin]"
+SSH:
+----
 linux-ucp-manager-primary : i-0dc78492b42702fa5  : ssh -i ~./mast/id_rsa docker@54.202.38.187
-linux-ucp-manager-primary : i-0dc78492b42702fa5  : ssh -i ~./mast/id_rsa docker1@54.202.38.188
  linux-dtr-worker-primary : i-0a8d5c7224a6f4716  : ssh -i ~./mast/id_rsa docker@54.214.205.186
             linux-workers : i-04f15b776742630a8  : ssh -i ~./mast/id_rsa docker@34.221.156.173
-Docker UCP CLI interface:
-AUTHTOKEN=$(curl -sk -d '{"username":"admin","password":"abcdefg"}' https://mgag-ucp-f7295da70e433929.elb.us-west-2.amazonaws.com/auth/login | jq -r .auth_token)
-curl -k -H "Authorization: Bearer $AUTHTOKEN" https://mgag-ucp-f7295da70e433929.elb.us-west-2.amazonaws.com/api/clientbundle -o bundle.zip
 
+Docker UCP CLI interface: (run these cmds from ssh terminal on UCP manager
+-------------------------
+sudo apt install unzip jq
+AUTHTOKEN=$(curl -sk -d '{"username":"admin","password":"ucp12345"}' https://mgag-ucp-f7295da70e433929.elb.us-west-2.amazonaws.com/auth/login | jq -r .auth_token)
+curl -k -H "Authorization: Bearer $AUTHTOKEN" https://mgag-ucp-f7295da70e433929.elb.us-west-2.amazonaws.com/api/clientbundle -o bundle.zip
+unzip bundle.zip
+eval "$(<env.sh)"
 ```
 
 ## Help

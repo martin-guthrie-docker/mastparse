@@ -179,13 +179,18 @@ func (t *MparseClass) ReadMastInventory() error {
 
 func (t *MparseClass) PrintCLIs() error {
 
+	fmt.Println("SSH:")
+	fmt.Println("----")
 	err := t.make_ssh_for_hosts()
 	if err != nil {
 		t.Log.Errorf("Fail make_ssh_cmds: %v", err)
 		return err
 	}
 
-	fmt.Println("Docker UCP CLI interface:")
+	fmt.Println()
+	fmt.Println("Docker UCP CLI interface: (run these cmds from ssh terminal on UCP manager")
+	fmt.Println("-------------------------")
+	fmt.Println("sudo apt install unzip jq")
 	cmd := fmt.Sprintf("AUTHTOKEN=$(curl -sk -d '{\"username\":\"%s\",\"password\":\"%s\"}' https://%s/auth/login | jq -r .auth_token)",
 		"admin", "ucp12345", t.docker_ucp_lb)
 	fmt.Println(cmd)
@@ -193,6 +198,8 @@ func (t *MparseClass) PrintCLIs() error {
 	cmd = fmt.Sprintf("curl -k -H \"Authorization: Bearer $AUTHTOKEN\" https://%s/api/clientbundle -o bundle.zip",
 		t.docker_ucp_lb)
 	fmt.Println(cmd)
+	fmt.Println("unzip bundle.zip")
+	fmt.Println("eval \"$(<env.sh)\"")
 
 	return nil
 }
