@@ -6,9 +6,9 @@ import (
 	"github.com/martin-guthrie-docker/mastparse/cmd"
 )
 
-func TestAction1Func(t *testing.T) {
+func TestInspect(t *testing.T) {
 
-	_, err := cmd.ExecuteCommand("deployment", "string1")
+	_, err := cmd.ExecuteCommand("inspect", "test")
 
 	if err != nil {
 		t.Errorf("deployment failed with err: %s", err.Error())

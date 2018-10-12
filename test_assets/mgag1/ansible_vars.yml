@@ -1,0 +1,10 @@
+---
+
+docker_ee_subscriptions_ubuntu: sub-063270f1-2a69-4942-bfca-c1ca57215642
+docker_dtr_replica_id: 1234567890ab
+docker_ucp_admin_password: ucp12345
+docker_ee_daemon_options:
+  debug: true
+docker_ee_release_channel: test
+docker_ee_version: latest
+docker_ucp_version: latest

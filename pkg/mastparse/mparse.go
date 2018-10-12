@@ -11,7 +11,6 @@ import (
 	"strings"
 )
 
-
 const mastInventoryFile string = "/inventory/1.hosts"
 const ansibleVarsRegex string = `^(?P<id>.*)\s*ansible_user=(?P<user>\w*)\s*ansible_host=(?P<ip>\d+\.\d+\.\d+\.\d+)`
 
@@ -28,7 +27,6 @@ type creds struct {
 	user    string
 	ip      string
 }
-
 
 type MparseClass struct {
 	MparseClassCfg          // this is an embedded type
@@ -105,7 +103,7 @@ func (t *MparseClass) get_body(field string) (string, error) {
 		UnparseableSections: []string{field},
 	}, t.pathToMastInventory)
 	if err != nil {
-		t.Log.Errorf("Fail to ini.LoadSources: ", err)
+		t.Log.Errorf("Fail to ini.LoadSources: %v", err)
 		return "", err
 	}
 

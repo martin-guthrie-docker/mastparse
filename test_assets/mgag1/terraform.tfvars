@@ -1,0 +1,10 @@
+linux_ucp_manager_count = 1
+linux_ucp_worker_count = 1
+linux_dtr_count = 1
+linux_database_count = 0
+windows_ucp_worker_count = 0
+region = "us-west-2"
+efs_supported = 0
+linux_user = "docker"
+linux_ami_name = "testkit/ubuntu_18.04/*"
+linux_ami_owner = "546848686991"
