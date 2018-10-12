@@ -8,7 +8,6 @@ a terminal.
 
 ```bash
 martin@martin-Latitude-5590:~/go/src/github.com/martin-guthrie-docker/mastparse$ ./mastparse inspect mgag
-[0000]  WARN       command.go: 852:cobra.(*Command).ExecuteC     | Config File ".mastp" Not Found in "[/home/martin]"
 SSH:
 ----
 linux-ucp-manager-primary : i-0dc78492b42702fa5  : ssh -i ~./mast/id_rsa docker@54.202.38.187
