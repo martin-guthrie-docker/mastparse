@@ -2,6 +2,7 @@ package mastparse
 
 import (
 	"errors"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/ini.v1"
 	"io/ioutil"
@@ -22,7 +23,7 @@ type MparseClassCfg struct {
 }
 
 type creds struct {
-	name    string
+	field   string
 	user    string
 	ip      string
 }
@@ -39,7 +40,7 @@ type MparseClass struct {
 	ansibleRegex         *regexp.Regexp
 	docker_ucp_lb        string
 	sshHosts             []creds
-	hosts                []string
+	iniField             []string
 
 }
 
@@ -64,24 +65,35 @@ func NewMparseClass(cfg MparseClassCfg) (*MparseClass, error) {
 	t.openSucceeded = false
 	t.ansibleRegex, _ = regexp.Compile(ansibleVarsRegex)
 
-	t.hosts = []string{"linux-ucp-manager-primary", "linux-dtr-worker-primary"}
+	t.iniField = []string{"linux-ucp-manager-primary", "linux-dtr-worker-primary", "linux-ucp-manager-replicas",
+	"linux-dtr-worker-replicas", "linux-workers", "windows-workers", "linux-databases", "linux-build-servers",
+	"windows-databases", "windows-build-servers"}
 
 	return t, nil
 }
 
-func (t *MparseClass) get_creds_fields(dst *[]creds, body string) error {
+func (t *MparseClass) get_creds_fields(dst *[]creds, body string, field string) error {
+	t.Log.Info("parsing field: ", field)
 	for _, line := range strings.Split(strings.TrimSuffix(body, "\n"), "\n") {
-		t.Log.Debug("parse: ", line)
+		if len(line) == 0 {
+			continue
+		}
+		t.Log.Debug("line: ", line)
 		matches := t.ansibleRegex.FindStringSubmatch(line)
+		if len(matches) == 0 {
+			t.Log.Debugf("No matches for line: %s", line)
+			continue
+		}
 		if len(matches) != 3 {
 			t.Log.Errorf("Unexpected matches")
-			return errors.New("Unexpected matches")
+			continue
 		}
 		t.Log.Debug("len(matches): ", len(matches))
 		t.Log.Debug("matches[0]: ", matches[0])
-		t.Log.Info("ucp_manager_user: ", matches[1])
-		t.Log.Info("ucp_manager_ip: ", matches[2])
+		t.Log.Info("user: ", matches[1])
+		t.Log.Info("ip  : ", matches[2])
 		var c creds
+		c.field = field
 		c.user = matches[1]
 		c.ip = matches[2]
 		*dst = append(*dst, c)
@@ -111,15 +123,27 @@ func (t *MparseClass) get_hosts() error {
 	// which is not parsable via the ini library, so bring in as a blob
 	// and use regex to get the parts
 
-	for _, host := range t.hosts {
-		body, err := t.get_body(host)
+	for _, field := range t.iniField {
+		body, err := t.get_body(field)
 		if err != nil {
-			t.Log.Errorf("Fail to ini.get_body for host: %s, %v", host, err)
+			t.Log.Errorf("Fail to ini.get_body for host: %s, %v", field, err)
 			return err
 		}
-		t.get_creds_fields(&t.sshHosts, body)
+		if len(body) == 0 {
+			continue
+		}
+		t.get_creds_fields(&t.sshHosts, body, field)
 	}
 	t.Log.Debug("len(t.sshHosts): ", len(t.sshHosts))
+
+	return nil
+}
+
+
+func (t *MparseClass) make_ssh_for_hosts() error {
+	for _, cred := range t.sshHosts {
+		fmt.Printf("%25s : ssh -i ~./mast/id_rsa %s@%s\n", cred.field, cred.user, cred.ip)
+	}
 
 	return nil
 }
@@ -133,18 +157,28 @@ func (t *MparseClass) ReadMastInventory() error {
 		return errors.New("Open not succeeded")
 	}
 
+	// Easy stuff, parse the ini file for easy fields we care about
+	// load the file...
 	cfg, err := ini.Load(t.pathToMastInventory)
 	if err != nil {
 		t.Log.Errorf("Fail to read file: %v", err)
 		return err
 	}
 
+	// get section and variable
 	t.docker_ucp_lb = cfg.Section("all:vars").Key("docker_ucp_lb").String()
 	t.Log.Info("docker_ucp_lb: ", t.docker_ucp_lb)
 
+	// Hard stuff, ansible ini file has lines that don't parse as ini
+	// find all the hosts for ssh creds
 	err = t.get_hosts()
 	if err != nil {
-		t.Log.Errorf("Fail get_ucp_manager_prime_fields: %v", err)
+		t.Log.Errorf("Fail get_hosts: %v", err)
+		return err
+	}
+	err = t.make_ssh_for_hosts()
+	if err != nil {
+		t.Log.Errorf("Fail make_ssh_cmds: %v", err)
 		return err
 	}
 
