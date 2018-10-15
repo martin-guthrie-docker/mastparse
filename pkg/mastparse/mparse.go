@@ -138,7 +138,7 @@ func (t *MparseClass) get_hosts() error {
 
 func (t *MparseClass) make_ssh_for_hosts() error {
 	for _, cred := range t.sshHosts {
-		fmt.Printf("%25s : %20s : ssh -i ~./mast/id_rsa %s@%s\n", cred.field, cred.id, cred.user, cred.ip)
+		fmt.Printf("%25s : %20s : ssh -i ~/.mast/id_rsa %s@%s\n", cred.field, cred.id, cred.user, cred.ip)
 	}
 
 	return nil
